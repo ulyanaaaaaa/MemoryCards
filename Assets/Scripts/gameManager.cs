@@ -1,96 +1,82 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
-using System.Collections;
+﻿using System.Collections;
+using UnityEngine;
 using System.Collections.Generic;
 
-public class gameManager : MonoBehaviour {
+public class GameManager : MonoBehaviour {
 
-	public Sprite[] cardFace;
-	public Sprite cardBack;
-	public GameObject[] cards;
-	public GameObject gameTime;
+	[field: SerializeField] private Sprite[] _cardFace;
+    [field: SerializeField] private Sprite _cardBack;
+    [field: SerializeField] private GameObject[] _cards;
+    [field: SerializeField] private GameObject _gameTime;
+    
+    private bool _initialized;
+    private int _matches = 4;
 
-	private bool _init  = false;
-	private int _matches = 4;
+    private void Update () {
+        if (!_initialized)
+            InitializeCards ();
 
-	// Update is called once per frame
-	void Update () {
-		if (!_init)
-			initializeCards ();
+        if (Input.GetMouseButtonUp (0))
+            CheckCards ();
+    }
 
-		if (Input.GetMouseButtonUp (0))
-			checkCards ();
+    private void InitializeCards() {
+        for (int id = 0; id < 2; id++) {
+            for (int i = 1; i < 5; i++) {
 
-	}
+                bool test = false;
+                int choice = 0;
+                while (!test) {
+                    choice = Random.Range (0, _cards.Length);
+                    test = !(_cards [choice].GetComponent<Card> ().Initialized);
+                }
+                _cards [choice].GetComponent<Card> ().CardValue = i;
+                _cards [choice].GetComponent<Card> ().Initialized = true;
+            }
+        }
 
-	void initializeCards() {
-		for (int id = 0; id < 2; id++) {
-			for (int i = 1; i < 5; i++) {
+        foreach (GameObject c in _cards)
+            c.GetComponent<Card> ().SetupGraphics ();
 
-				bool test = false;
-				int choice = 0;
-				while (!test) {
-					choice = Random.Range (0, cards.Length);
-					test = !(cards [choice].GetComponent<cardScript> ().initialized);
-				}
-				cards [choice].GetComponent<cardScript> ().cardValue = i;
-				cards [choice].GetComponent<cardScript> ().initialized = true;
-			}
-		}
+        if (!_initialized)
+            _initialized = true;
+    }
 
-		foreach (GameObject c in cards)
-			c.GetComponent<cardScript> ().setupGraphics ();
+    public Sprite GetCardBack() {
+        return _cardBack;
+    }
 
-		if (!_init)
-			_init = true;
-	}
+    public Sprite GetCardFace(int i) {
+        return _cardFace[i - 1];
+    }
 
-	public Sprite getCardBack() {
-		return cardBack;
-	}
+    private void CheckCards() {
+        List<int> c = new List<int> ();
 
-	public Sprite getCardFace(int i) {
-		return cardFace[i - 1];
-	}
+        for (int i = 0; i < _cards.Length; i++) {
+            if (_cards [i].GetComponent<Card> ().State == 1)
+                c.Add (i);
+        }
 
-	void checkCards() {
-		List<int> c = new List<int> ();
+        if (c.Count == 2)
+            CardComparison (c);
+    }
 
-		for (int i = 0; i < cards.Length; i++) {
-			if (cards [i].GetComponent<cardScript> ().state == 1)
-				c.Add (i);
-		}
+    private void CardComparison(List<int> c){
+        Card.DO_NOT = true;
+        int x = 0;
 
-		if (c.Count == 2)
-			cardComparison (c);
-	}
+        if (_cards [c [0]].GetComponent<Card> ().CardValue == _cards [c [1]].GetComponent<Card> ().CardValue) {
+            x = 2;
+            _matches--;
+            if (_matches == 0)
+                _gameTime.GetComponent<GameTime>().EndGame();
+        }
 
-	void cardComparison(List<int> c){
-		cardScript.DO_NOT = true;
-
-		int x = 0;
-
-		if (cards [c [0]].GetComponent<cardScript> ().cardValue == cards [c [1]].GetComponent<cardScript> ().cardValue) {
-			x = 2;
-			_matches--;
-			if (_matches == 0)
-				gameTime.GetComponent<timeScript> ().endGame ();
-		}
-
-
-		for (int i = 0; i < c.Count; i++) {
-			cards [c [i]].GetComponent<cardScript> ().state = x;
-			cards [c [i]].GetComponent<cardScript> ().falseCheck ();
-		}
+        for (int i = 0; i < c.Count; i++) {
+            _cards [c[i]].GetComponent<Card>().State = x;
+            _cards [c[i]].GetComponent<Card>().FalseCheck ();
+        }
 	
-	}
-
-	public void reGame(){
-		SceneManager.LoadScene ("gameScene");
-	}
-
-	public void reMenu(){
-		SceneManager.LoadScene ("menuScene");
-	}
+    }
 }
